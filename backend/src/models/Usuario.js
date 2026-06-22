@@ -5,10 +5,8 @@ const pool = require('../config/database');
 
 const Usuario = {
 
-    // Busca um usuário pelo email (usado no login)
+    // Busca um usuário pelo email
     async findByEmail(email) {
-        // O "?" é um placeholder — o mysql2 substitui de forma segura
-        // (previne SQL Injection automaticamente)
         const [rows] = await pool.query(
             'SELECT * FROM usuarios WHERE email = ?',
             [email]
