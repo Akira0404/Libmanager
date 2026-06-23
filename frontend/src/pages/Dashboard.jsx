@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import Sidebar from '../components/Sidebar';
 
@@ -56,6 +56,13 @@ function Dashboard() {
         return `${dia}/${mes}/${ano}`;
     }
 
+    function diasRestantes(dataDevolucao) {
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        const devolucao = new Date(dataDevolucao + 'T00:00:00');
+        return Math.ceil((devolucao - hoje) / (1000 * 60 * 60 * 24));
+    }
+
     if (!usuario) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -69,15 +76,20 @@ function Dashboard() {
 
     return (
         <div className="flex min-h-screen">
-            {/* Sidebar com o link "Início" ativo */}
             <Sidebar ativa="dashboard" />
 
             <main className="flex-1 bg-gray-100 p-8 overflow-y-auto">
+                {/* Cabeçalho */}
                 <div className="mb-8">
-                    <h1 className="text-xl font-bold text-gray-900 mb-1">DASHBOARD DO BIBLIOTECÁRIO</h1>
-                    <p className="text-sm text-gray-500">Bem-vindo, <span className="font-semibold text-gray-700">{usuario.nome}</span>!</p>
+                    <h1 className="text-xl font-bold text-gray-900 mb-1">
+                        DASHBOARD DO BIBLIOTECÁRIO
+                    </h1>
+                    <p className="text-sm text-gray-500">
+                        Bem-vindo, <span className="font-semibold text-gray-700">{usuario.nome}</span>!
+                    </p>
                 </div>
 
+                {/* Cards */}
                 <div className="flex gap-5 flex-wrap mb-8">
                     <div className="bg-white rounded-xl p-6 shadow-sm min-w-52 flex-1">
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Empréstimos Ativos</p>
@@ -90,16 +102,19 @@ function Dashboard() {
                         <p className="text-xs text-gray-400 mt-1">Livros devolvidos</p>
                     </div>
                     <div className="bg-white rounded-xl p-6 shadow-sm min-w-52 flex-1">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Total de Registros</p>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Total</p>
                         <p className="text-4xl font-bold text-gray-900">{emprestimos.length}</p>
-                        <p className="text-xs text-gray-400 mt-1">Empréstimos cadastrados</p>
+                        <p className="text-xs text-gray-400 mt-1">Registros no sistema</p>
                     </div>
                 </div>
 
+                {/* Tabela de Empréstimos */}
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                     <div className="px-6 py-5 border-b border-gray-100">
                         <h2 className="text-base font-bold text-gray-900">Gestão de Empréstimos</h2>
-                        <p className="text-xs text-gray-400 mt-1">Histórico de empréstimos do sistema (INNER JOIN)</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                            INNER JOIN — Leitores + Livros + Empréstimos
+                        </p>
                     </div>
 
                     {erro && (
@@ -109,45 +124,101 @@ function Dashboard() {
                     {carregando ? (
                         <div className="px-6 py-12 text-center text-gray-400 text-sm">Carregando empréstimos...</div>
                     ) : emprestimos.length === 0 ? (
-                        <div className="px-6 py-12 text-center text-gray-400 text-sm">Nenhum empréstimo registrado.</div>
+                        <div className="px-6 py-12 text-center text-gray-400 text-sm">
+                            Nenhum empréstimo registrado.
+                        </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
                                     <tr className="bg-gray-50">
-                                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Nome do Leitor</th>
-                                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Título do Livro</th>
-                                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Data Empréstimo</th>
-                                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Devolução Prevista</th>
+                                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Leitor</th>
+                                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">CPF</th>
+                                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Email</th>
+                                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Livro</th>
+                                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Empréstimo</th>
+                                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Devolução</th>
                                         <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
                                         <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Ação</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {emprestimos.map((emp) => (
-                                        <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 text-sm text-gray-900 font-medium">{emp.usuario_nome}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-700">{emp.livro_titulo}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-500">{formatarData(emp.data_emprestimo)}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-500">{formatarData(emp.data_devolucao_prevista)}</td>
-                                            <td className="px-6 py-4">
-                                                {emp.status === 'emprestado' ? (
-                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Emprestado</span>
-                                                ) : (
-                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Devolvido</span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {emp.status === 'emprestado' ? (
-                                                    <button onClick={() => handleDevolver(emp.id)} className="px-3 py-1.5 bg-[#2b6cb0] text-white text-xs font-medium rounded-md hover:bg-[#2c5282] transition-colors cursor-pointer">
-                                                        Devolver
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-xs text-gray-400">-</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {emprestimos.map((emp) => {
+                                        const dias = emp.status === 'emprestado'
+                                            ? diasRestantes(emp.data_devolucao_prevista)
+                                            : null;
+
+                                        return (
+                                            <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
+                                                {/* Nome do Leitor */}
+                                                <td className="px-6 py-4 text-sm text-gray-900 font-medium">
+                                                    {emp.leitor_nome}
+                                                </td>
+
+                                                {/* CPF */}
+                                                <td className="px-6 py-4 text-sm text-gray-500">
+                                                    {emp.leitor_cpf}
+                                                </td>
+
+                                                {/* Email */}
+                                                <td className="px-6 py-4 text-sm text-gray-500">
+                                                    {emp.leitor_email}
+                                                </td>
+
+                                                {/* Livro */}
+                                                <td className="px-6 py-4 text-sm text-gray-700">
+                                                    {emp.livro_titulo}
+                                                </td>
+
+                                                {/* Data Empréstimo */}
+                                                <td className="px-6 py-4 text-sm text-gray-500">
+                                                    {formatarData(emp.data_emprestimo)}
+                                                </td>
+
+                                                {/* Data Devolução */}
+                                                <td className="px-6 py-4 text-sm text-gray-500">
+                                                    {formatarData(emp.data_devolucao_prevista)}
+                                                    {dias !== null && dias >= 0 && (
+                                                        <span className="block text-xs text-gray-400 mt-0.5">
+                                                            {dias === 0 ? 'Vence hoje' : `${dias} dia${dias > 1 ? 's' : ''} restante${dias > 1 ? 's' : ''}`}
+                                                        </span>
+                                                    )}
+                                                    {dias !== null && dias < 0 && (
+                                                        <span className="block text-xs text-red-500 mt-0.5">
+                                                            Atrasado {Math.abs(dias)} dia{Math.abs(dias) > 1 ? 's' : ''}
+                                                        </span>
+                                                    )}
+                                                </td>
+
+                                                {/* Status */}
+                                                <td className="px-6 py-4">
+                                                    {emp.status === 'emprestado' ? (
+                                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                                            Emprestado
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                            Devolvido
+                                                        </span>
+                                                    )}
+                                                </td>
+
+                                                {/* Ação */}
+                                                <td className="px-6 py-4">
+                                                    {emp.status === 'emprestado' ? (
+                                                        <button
+                                                            onClick={() => handleDevolver(emp.id)}
+                                                            className="px-3 py-1.5 bg-[#2b6cb0] text-white text-xs font-medium rounded-md hover:bg-[#2c5282] transition-colors cursor-pointer"
+                                                        >
+                                                            Devolver
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400">-</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

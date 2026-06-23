@@ -3,6 +3,8 @@ import Login from './pages/Login';
 import Cadastro from './pages/Cadastro';
 import Dashboard from './pages/Dashboard';
 import NovoLivro from './pages/NovoLivro';
+import NovoLeitor from './pages/NovoLeitor';
+import NovoEmprestimo from './pages/NovoEmprestimo';
 
 function App() {
     return (
@@ -13,6 +15,8 @@ function App() {
                 <Route path="/cadastro" element={<Cadastro />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/novo-livro" element={<NovoLivro />} />
+                <Route path="/novo-leitor" element={<NovoLeitor />} />
+                <Route path="/novo-emprestimo" element={<NovoEmprestimo />} />
             </Routes>
         </BrowserRouter>
     );
