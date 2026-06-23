@@ -1,24 +1,16 @@
-// =============================================
-// Controller: Leitores
-// =============================================
-// Gerencia as operações de leitores: listar,
-// cadastrar novo e deletar.
-// =============================================
-
 const Leitor = require('../models/Leitor');
 const { z } = require('zod');
 
-// Schema de validação com Zod
 const leitorSchema = z.object({
     nome_completo: z.string()
         .min(3, 'O nome deve ter pelo menos 3 caracteres')
-        .max(150, 'O nome deve ter no máximo 150 caracteres'),
+        .max(150),
     cpf: z.string()
-        .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, 'CPF inválido. Use o formato: 000.000.000-00'),
+        .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, 'CPF inválido. Use: 000.000.000-00'),
     email: z.string()
         .email('Email inválido'),
     telefone: z.string()
-        .max(20, 'Telefone muito longo')
+        .max(20)
         .optional()
         .nullable()
 });
@@ -27,7 +19,6 @@ const leitorController = {
 
     // =============================================
     // GET /api/leitores
-    // Lista todos os leitores
     // =============================================
     async listar(req, res) {
         try {
@@ -41,14 +32,18 @@ const leitorController = {
 
     // =============================================
     // POST /api/leitores
-    // Cadastra um novo leitor
+    // Recebe multipart/form-data (foto + dados)
     // =============================================
     async criar(req, res) {
         try {
-            // Valida os dados com Zod
-            const dados = leitorSchema.parse(req.body);
+            const dados = leitorSchema.parse({
+                nome_completo: req.body.nome_completo,
+                cpf: req.body.cpf,
+                email: req.body.email,
+                telefone: req.body.telefone || null
+            });
 
-            // Verifica se já existe alguém com esse CPF
+            // Verifica CPF duplicado
             const leitorExistente = await Leitor.findByCpf(dados.cpf);
             if (leitorExistente) {
                 return res.status(409).json({
@@ -56,7 +51,14 @@ const leitorController = {
                 });
             }
 
-            const novoLeitor = await Leitor.create(dados);
+            // Se enviou foto, pega o caminho do arquivo
+            // req.file é preenchido pelo multer
+            const foto = req.file ? `/uploads/${req.file.filename}` : null;
+
+            const novoLeitor = await Leitor.create({
+                ...dados,
+                foto
+            });
 
             return res.status(201).json({
                 mensagem: 'Leitor cadastrado com sucesso!',
@@ -76,7 +78,6 @@ const leitorController = {
 
     // =============================================
     // DELETE /api/leitores/:id
-    // Deleta um leitor
     // =============================================
     async deletar(req, res) {
         try {
