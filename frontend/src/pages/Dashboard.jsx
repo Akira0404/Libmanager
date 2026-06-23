@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import Sidebar from '../components/Sidebar';
 
@@ -63,6 +63,12 @@ function Dashboard() {
         return Math.ceil((devolucao - hoje) / (1000 * 60 * 60 * 24));
     }
 
+    // =============================================
+    // URL base do backend (para buscar as fotos)
+    // Em desenvolvimento, é localhost:3001
+    // =============================================
+    const API_URL = 'http://localhost:3001';
+
     if (!usuario) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -79,7 +85,6 @@ function Dashboard() {
             <Sidebar ativa="dashboard" />
 
             <main className="flex-1 bg-gray-100 p-8 overflow-y-auto">
-                {/* Cabeçalho */}
                 <div className="mb-8">
                     <h1 className="text-xl font-bold text-gray-900 mb-1">
                         DASHBOARD DO BIBLIOTECÁRIO
@@ -108,7 +113,7 @@ function Dashboard() {
                     </div>
                 </div>
 
-                {/* Tabela de Empréstimos */}
+                {/* Tabela */}
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                     <div className="px-6 py-5 border-b border-gray-100">
                         <h2 className="text-base font-bold text-gray-900">Gestão de Empréstimos</h2>
@@ -124,9 +129,7 @@ function Dashboard() {
                     {carregando ? (
                         <div className="px-6 py-12 text-center text-gray-400 text-sm">Carregando empréstimos...</div>
                     ) : emprestimos.length === 0 ? (
-                        <div className="px-6 py-12 text-center text-gray-400 text-sm">
-                            Nenhum empréstimo registrado.
-                        </div>
+                        <div className="px-6 py-12 text-center text-gray-400 text-sm">Nenhum empréstimo registrado.</div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full">
@@ -150,32 +153,37 @@ function Dashboard() {
 
                                         return (
                                             <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
-                                                {/* Nome do Leitor */}
-                                                <td className="px-6 py-4 text-sm text-gray-900 font-medium">
-                                                    {emp.leitor_nome}
+                                                {/* Leitor com foto */}
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        {/* Foto do leitor */}
+                                                        {emp.leitor_foto ? (
+                                                            <img
+                                                                src={`${API_URL}${emp.leitor_foto}`}
+                                                                alt={emp.leitor_nome}
+                                                                className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-10 h-10 rounded-full bg-[#2b6cb0]/10 flex items-center justify-center border-2 border-[#2b6cb0]/20">
+                                                                <span className="text-sm font-bold text-[#2b6cb0]">
+                                                                    {emp.leitor_nome?.charAt(0).toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        <span className="text-sm text-gray-900 font-medium">
+                                                            {emp.leitor_nome}
+                                                        </span>
+                                                    </div>
                                                 </td>
 
-                                                {/* CPF */}
-                                                <td className="px-6 py-4 text-sm text-gray-500">
-                                                    {emp.leitor_cpf}
-                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-500">{emp.leitor_cpf}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-500">{emp.leitor_email}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-700">{emp.livro_titulo}</td>
 
-                                                {/* Email */}
-                                                <td className="px-6 py-4 text-sm text-gray-500">
-                                                    {emp.leitor_email}
-                                                </td>
-
-                                                {/* Livro */}
-                                                <td className="px-6 py-4 text-sm text-gray-700">
-                                                    {emp.livro_titulo}
-                                                </td>
-
-                                                {/* Data Empréstimo */}
                                                 <td className="px-6 py-4 text-sm text-gray-500">
                                                     {formatarData(emp.data_emprestimo)}
                                                 </td>
 
-                                                {/* Data Devolução */}
                                                 <td className="px-6 py-4 text-sm text-gray-500">
                                                     {formatarData(emp.data_devolucao_prevista)}
                                                     {dias !== null && dias >= 0 && (
@@ -190,7 +198,6 @@ function Dashboard() {
                                                     )}
                                                 </td>
 
-                                                {/* Status */}
                                                 <td className="px-6 py-4">
                                                     {emp.status === 'emprestado' ? (
                                                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
@@ -203,7 +210,6 @@ function Dashboard() {
                                                     )}
                                                 </td>
 
-                                                {/* Ação */}
                                                 <td className="px-6 py-4">
                                                     {emp.status === 'emprestado' ? (
                                                         <button

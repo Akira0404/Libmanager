@@ -1,25 +1,18 @@
-// =============================================
-// Página: Novo Empréstimo - LibManager
-// =============================================
-// Formulário para registrar um novo empréstimo.
-// Seleciona um leitor e um livro cadastrados,
-// define as datas (padrão 30 dias) e cria o
-// registro no banco de dados.
-// =============================================
-
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import Sidebar from '../components/Sidebar';
+import CampoPesquisa from '../components/CampoPesquisa';
 
 function NovoEmprestimo() {
     // =============================================
     // Estados
     // =============================================
-    const [leitorId, setLeitorId] = useState('');
-    const [livroId, setLivroId] = useState('');
+    const [leitorSelecionado, setLeitorSelecionado] = useState(null);
+    const [livroSelecionado, setLivroSelecionado] = useState(null);
     const [dataEmprestimo, setDataEmprestimo] = useState('');
     const [dataDevolucao, setDataDevolucao] = useState('');
+    const [searchParams] = useSearchParams();
 
     // Listas que vêm do backend
     const [leitores, setLeitores] = useState([]);
@@ -33,7 +26,7 @@ function NovoEmprestimo() {
     const navigate = useNavigate();
 
     // =============================================
-    // Carrega leitores e livros ao abrir a página
+    // Carrega dados ao abrir a página
     // =============================================
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -42,17 +35,15 @@ function NovoEmprestimo() {
             return;
         }
 
-        // Define a data de hoje como padrão
+        // Datas padrão
         const hoje = new Date();
-        const hojeStr = hoje.toISOString().split('T')[0];
-        setDataEmprestimo(hojeStr);
+        setDataEmprestimo(hoje.toISOString().split('T')[0]);
 
-        // Define devolução padrão: 30 dias a partir de hoje
         const devolucao = new Date(hoje);
         devolucao.setDate(devolucao.getDate() + 30);
         setDataDevolucao(devolucao.toISOString().split('T')[0]);
 
-        // Busca leitores e livros do backend
+        // Busca leitores e livros
         async function carregarDados() {
             try {
                 const [resLeitores, resLivros] = await Promise.all([
@@ -61,8 +52,18 @@ function NovoEmprestimo() {
                 ]);
                 setLeitores(resLeitores.data);
                 setLivros(resLivros.data);
+
+                const livroIdParam = searchParams.get('livro_id');
+                    if (livroIdParam) {
+                const livroEncontrado = resLivros.data.find(
+                  l => l.id === Number(livroIdParam)
+                );
+                    if (livroEncontrado) {
+                         setLivroSelecionado(livroEncontrado);
+                    }
+}
             } catch (error) {
-                setErro('Erro ao carregar dados. Verifique se o servidor está rodando.');
+                setErro('Erro ao carregar dados.');
             }
         }
 
@@ -70,17 +71,78 @@ function NovoEmprestimo() {
     }, [navigate]);
 
     // =============================================
-    // Quando a data de empréstimo muda, recalcula
-    // a devolução para 30 dias depois
+    // Recalcula devolução quando empréstimo muda
     // =============================================
     function handleDataEmprestimoChange(data) {
         setDataEmprestimo(data);
-
         if (data) {
             const inicio = new Date(data + 'T00:00:00');
             inicio.setDate(inicio.getDate() + 30);
             setDataDevolucao(inicio.toISOString().split('T')[0]);
         }
+    }
+
+    // =============================================
+    // Filtros de pesquisa
+    // =============================================
+
+    // Filtra leitores por nome, CPF ou email
+    function filtrarLeitor(leitor, termo) {
+        const t = termo.toLowerCase();
+        return (
+            leitor.nome_completo.toLowerCase().includes(t) ||
+            leitor.cpf.includes(t) ||
+            leitor.email.toLowerCase().includes(t)
+        );
+    }
+
+    // Filtra livros por título, autor ou ISBN
+    function filtrarLivro(livro, termo) {
+        const t = termo.toLowerCase();
+        return (
+            livro.titulo.toLowerCase().includes(t) ||
+            livro.autor.toLowerCase().includes(t) ||
+            (livro.isbn && livro.isbn.includes(t))
+        );
+    }
+
+    // =============================================
+    // Renderização dos itens no dropdown
+    // =============================================
+
+    // Mostra leitor: Nome — CPF
+    function renderLeitor(leitor) {
+        return (
+            <div className="flex items-center gap-2">
+                {leitor.foto ? (
+                    <img
+                        src={`http://localhost:3001${leitor.foto}`}
+                        alt=""
+                        className="w-8 h-8 rounded-full object-cover"
+                    />
+                ) : (
+                    <div className="w-8 h-8 rounded-full bg-[#2b6cb0]/10 flex items-center justify-center shrink-0">
+                        <span className="text-xs font-bold text-[#2b6cb0]">
+                            {leitor.nome_completo.charAt(0).toUpperCase()}
+                        </span>
+                    </div>
+                )}
+                <div>
+                    <span className="font-medium">{leitor.nome_completo}</span>
+                    <span className="text-gray-400 ml-2">{leitor.cpf}</span>
+                </div>
+            </div>
+        );
+    }
+
+    // Mostra livro: Título — Autor
+    function renderLivro(livro) {
+        return (
+            <div>
+                <span className="font-medium">{livro.titulo}</span>
+                <span className="text-gray-400 ml-2">{livro.autor}</span>
+            </div>
+        );
     }
 
     // =============================================
@@ -91,12 +153,12 @@ function NovoEmprestimo() {
         setErro('');
         setSucesso('');
 
-        if (!leitorId) {
-            setErro('Selecione um leitor.');
+        if (!leitorSelecionado) {
+            setErro('Pesquise e selecione um leitor.');
             return;
         }
-        if (!livroId) {
-            setErro('Selecione um livro.');
+        if (!livroSelecionado) {
+            setErro('Pesquise e selecione um livro.');
             return;
         }
         if (!dataEmprestimo) {
@@ -107,10 +169,8 @@ function NovoEmprestimo() {
             setErro('A data de devolução é obrigatória.');
             return;
         }
-
-        // Verifica se a devolução é depois do empréstimo
         if (new Date(dataDevolucao) <= new Date(dataEmprestimo)) {
-            setErro('A data de devolução deve ser posterior à data de empréstimo.');
+            setErro('A data de devolução deve ser posterior ao empréstimo.');
             return;
         }
 
@@ -118,19 +178,16 @@ function NovoEmprestimo() {
 
         try {
             await api.post('/emprestimos', {
-                leitor_id: Number(leitorId),
-                livro_id: Number(livroId),
+                leitor_id: leitorSelecionado.id,
+                livro_id: livroSelecionado.id,
                 data_emprestimo: dataEmprestimo,
                 data_devolucao_prevista: dataDevolucao
             });
 
             setSucesso('Empréstimo registrado com sucesso!');
+            setLeitorSelecionado(null);
+            setLivroSelecionado(null);
 
-            // Limpa o formulário
-            setLeitorId('');
-            setLivroId('');
-
-            // Reseta as datas
             const hoje = new Date();
             setDataEmprestimo(hoje.toISOString().split('T')[0]);
             const devolucao = new Date(hoje);
@@ -147,7 +204,7 @@ function NovoEmprestimo() {
             } else if (error.request) {
                 setErro('Não foi possível conectar ao servidor.');
             } else {
-                setErro('Erro inesperado. Tente novamente.');
+                setErro('Erro inesperado.');
             }
         } finally {
             setCarregando(false);
@@ -156,17 +213,15 @@ function NovoEmprestimo() {
 
     return (
         <div className="flex min-h-screen">
-            {/* Sidebar */}
             <Sidebar ativa="novo-emprestimo" />
 
-            {/* Conteúdo */}
             <main className="flex-1 bg-gray-100 p-8 overflow-y-auto">
                 <div className="max-w-2xl">
                     <h1 className="text-xl font-bold text-gray-900 mb-1">
                         NOVO EMPRÉSTIMO
                     </h1>
                     <p className="text-sm text-gray-500 mb-8">
-                        Selecione um leitor e um livro para registrar o empréstimo.
+                        Pesquise o leitor e o livro para registrar o empréstimo.
                     </p>
 
                     {erro && (
@@ -174,7 +229,6 @@ function NovoEmprestimo() {
                             {erro}
                         </div>
                     )}
-
                     {sucesso && (
                         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-5">
                             {sucesso}
@@ -183,57 +237,48 @@ function NovoEmprestimo() {
 
                     <div className="bg-white rounded-xl shadow-sm p-6">
                         <form onSubmit={handleSubmit} className="space-y-5">
-                            {/* Selecionar Leitor */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-600 mb-1.5">
-                                    Leitor
-                                </label>
-                                <select
-                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-sm text-gray-800 bg-gray-50 outline-none transition-all duration-200 focus:border-[#2b6cb0] focus:shadow-[0_0_0_3px_rgba(43,108,176,0.15)] focus:bg-white cursor-pointer"
-                                    value={leitorId}
-                                    onChange={(e) => setLeitorId(e.target.value)}
-                                    required
-                                >
-                                    <option value="">Selecione o leitor</option>
-                                    {leitores.map((l) => (
-                                        <option key={l.id} value={l.id}>
-                                            {l.nome_completo} — {l.cpf}
-                                        </option>
-                                    ))}
-                                </select>
-                                {leitores.length === 0 && (
-                                    <p className="text-xs text-amber-600 mt-1.5">
-                                        Nenhum leitor cadastrado. Cadastre um leitor primeiro.
-                                    </p>
-                                )}
-                            </div>
 
-                            {/* Selecionar Livro */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-600 mb-1.5">
-                                    Livro
-                                </label>
-                                <select
-                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-sm text-gray-800 bg-gray-50 outline-none transition-all duration-200 focus:border-[#2b6cb0] focus:shadow-[0_0_0_3px_rgba(43,108,176,0.15)] focus:bg-white cursor-pointer"
-                                    value={livroId}
-                                    onChange={(e) => setLivroId(e.target.value)}
-                                    required
-                                >
-                                    <option value="">Selecione o livro</option>
-                                    {livros.map((lv) => (
-                                        <option key={lv.id} value={lv.id}>
-                                            {lv.titulo} — {lv.autor}
-                                        </option>
-                                    ))}
-                                </select>
-                                {livros.length === 0 && (
-                                    <p className="text-xs text-amber-600 mt-1.5">
-                                        Nenhum livro cadastrado. Cadastre um livro primeiro.
-                                    </p>
-                                )}
-                            </div>
+                            {/* =============================================
+                                PESQUISA DE LEITOR
+                                ============================================= */}
+                            <CampoPesquisa
+                                label="Leitor"
+                                placeholder="Pesquisar por nome, CPF ou email..."
+                                itens={leitores}
+                                valorSelecionado={leitorSelecionado}
+                                onSelect={setLeitorSelecionado}
+                                renderItem={renderLeitor}
+                                filtroFn={filtrarLeitor}
+                            />
 
-                            {/* Datas lado a lado */}
+                            {leitores.length === 0 && (
+                                <p className="text-xs text-amber-600 -mt-3">
+                                    Nenhum leitor cadastrado. Cadastre um leitor primeiro.
+                                </p>
+                            )}
+
+                            {/* =============================================
+                                PESQUISA DE LIVRO
+                                ============================================= */}
+                            <CampoPesquisa
+                                label="Livro"
+                                placeholder="Pesquisar por título, autor ou ISBN..."
+                                itens={livros}
+                                valorSelecionado={livroSelecionado}
+                                onSelect={setLivroSelecionado}
+                                renderItem={renderLivro}
+                                filtroFn={filtrarLivro}
+                            />
+
+                            {livros.length === 0 && (
+                                <p className="text-xs text-amber-600 -mt-3">
+                                    Nenhum livro cadastrado. Cadastre um livro primeiro.
+                                </p>
+                            )}
+
+                            {/* =============================================
+                                DATAS
+                                ============================================= */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-600 mb-1.5">
@@ -262,7 +307,9 @@ function NovoEmprestimo() {
                                 </div>
                             </div>
 
-                            {/* Botões */}
+                            {/* =============================================
+                                BOTÕES
+                                ============================================= */}
                             <div className="flex gap-3 pt-2">
                                 <button
                                     type="submit"
