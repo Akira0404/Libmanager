@@ -35,3 +35,12 @@ CREATE TABLE IF NOT EXISTS livros (
         ON DELETE RESTRICT  -- Impede deletar uma categoria que tenha livros
         ON UPDATE CASCADE   -- Se o ID da categoria mudar, atualiza aqui também
 );
+
+CREATE TABLE IF NOT EXISTS leitores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome_completo VARCHAR(150) NOT NULL,
+    cpf VARCHAR(14) NOT NULL UNIQUE,
+    email VARCHAR(150) NOT NULL,
+    telefone VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

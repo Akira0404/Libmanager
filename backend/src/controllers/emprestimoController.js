@@ -1,24 +1,23 @@
+// =============================================
 // Controller: Empréstimos
-
-// Gerencia as operações de empréstimo de livros:
-// listar todos, criar novo e registrar devolução.
+// =============================================
 
 const Emprestimo = require('../models/Emprestimo');
 const { z } = require('zod');
 
-// Schema de validação para criar empréstimo
+// Schema de validação
 const emprestimoSchema = z.object({
-    usuario_id: z.number().int().positive('ID do usuário é obrigatório'),
-    livro_id: z.number().int().positive('ID do livro é obrigatório'),
-    data_emprestimo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida (use AAAA-MM-DD)'),
-    data_devolucao_prevista: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida (use AAAA-MM-DD)')
+    leitor_id: z.number().int().positive('Selecione um leitor'),
+    livro_id: z.number().int().positive('Selecione um livro'),
+    data_emprestimo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data de empréstimo inválida'),
+    data_devolucao_prevista: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data de devolução inválida')
 });
 
 const emprestimoController = {
 
+    // =============================================
     // GET /api/emprestimos
-    // Lista todos os empréstimos com dados do
-    // usuário e livro (via INNER JOIN)
+    // =============================================
     async listar(req, res) {
         try {
             const emprestimos = await Emprestimo.findAll();
@@ -29,13 +28,14 @@ const emprestimoController = {
         }
     },
 
+    // =============================================
     // POST /api/emprestimos
-    // Cria um novo empréstimo
+    // =============================================
     async criar(req, res) {
         try {
             const dados = emprestimoSchema.parse({
                 ...req.body,
-                usuario_id: Number(req.body.usuario_id),
+                leitor_id: Number(req.body.leitor_id),
                 livro_id: Number(req.body.livro_id)
             });
 
@@ -57,12 +57,12 @@ const emprestimoController = {
         }
     },
 
+    // =============================================
     // PUT /api/emprestimos/:id/devolver
-    // Registra a devolução de um livro
+    // =============================================
     async devolver(req, res) {
         try {
-            const { id } = req.params;
-            const devolvido = await Emprestimo.devolver(id);
+            const devolvido = await Emprestimo.devolver(req.params.id);
 
             if (!devolvido) {
                 return res.status(404).json({
@@ -74,7 +74,7 @@ const emprestimoController = {
                 mensagem: 'Livro devolvido com sucesso!'
             });
         } catch (error) {
-            console.error('Erro ao devolver livro:', error);
+            console.error('Erro ao devolver:', error);
             return res.status(500).json({ erro: 'Erro interno do servidor' });
         }
     }

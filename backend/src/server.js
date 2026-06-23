@@ -4,7 +4,8 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
 const emprestimoRoutes = require('./routes/emprestimoRoutes');
-const livroRoutes = require('./routes/livroRoutes'); // ← NOVA LINHA
+const livroRoutes = require('./routes/livroRoutes');
+const leitorRoutes = require('./routes/leitorRoutes'); // ← NOVA LINHA
 
 const app = express();
 
@@ -13,7 +14,8 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/emprestimos', emprestimoRoutes);
-app.use('/api/livros', livroRoutes); // ← NOVA LINHA
+app.use('/api/livros', livroRoutes);
+app.use('/api/leitores', leitorRoutes); // ← NOVA LINHA
 
 app.get('/', (req, res) => {
     res.json({ mensagem: 'LibManager API está rodando!' });

@@ -1,53 +1,46 @@
+// =============================================
+// Model: Empréstimo
+// =============================================
+// Usa INNER JOIN para trazer dados do leitor
+// (nome, CPF, email) e do livro (título) junto
+// com os dados do empréstimo.
+// =============================================
+
 const pool = require('../config/database');
 
 const Emprestimo = {
 
-    // Lista todos os empréstimos com dados do
-    // usuário e do livro (INNER JOIN)
+    // Lista todos os empréstimos com dados do leitor e livro
     async findAll() {
         const [rows] = await pool.query(`
             SELECT
                 e.id,
-                u.nome AS usuario_nome,
-                l.titulo AS livro_titulo,
+                l.id AS leitor_id,
+                l.nome_completo AS leitor_nome,
+                l.cpf AS leitor_cpf,
+                l.email AS leitor_email,
+                lv.id AS livro_id,
+                lv.titulo AS livro_titulo,
+                lv.autor AS livro_autor,
                 e.data_emprestimo,
                 e.data_devolucao_prevista,
                 e.data_devolucao_real,
                 e.status
             FROM emprestimos e
-            INNER JOIN usuarios u ON e.usuario_id = u.id
-            INNER JOIN livros l ON e.livro_id = l.id
+            INNER JOIN leitores l ON e.leitor_id = l.id
+            INNER JOIN livros lv ON e.livro_id = lv.id
             ORDER BY e.created_at DESC
         `);
         return rows;
     },
 
-    // Busca um empréstimo pelo ID
-    async findById(id) {
-        const [rows] = await pool.query(`
-            SELECT
-                e.id,
-                u.nome AS usuario_nome,
-                l.titulo AS livro_titulo,
-                e.data_emprestimo,
-                e.data_devolucao_prevista,
-                e.data_devolucao_real,
-                e.status
-            FROM emprestimos e
-            INNER JOIN usuarios u ON e.usuario_id = u.id
-            INNER JOIN livros l ON e.livro_id = l.id
-            WHERE e.id = ?
-        `, [id]);
-        return rows[0] || null;
-    },
-
     // Cria um novo empréstimo
-    async create({ usuario_id, livro_id, data_emprestimo, data_devolucao_prevista }) {
+    async create({ leitor_id, livro_id, data_emprestimo, data_devolucao_prevista }) {
         const [result] = await pool.query(
             `INSERT INTO emprestimos
-                (usuario_id, livro_id, data_emprestimo, data_devolucao_prevista)
+                (leitor_id, livro_id, data_emprestimo, data_devolucao_prevista)
              VALUES (?, ?, ?, ?)`,
-            [usuario_id, livro_id, data_emprestimo, data_devolucao_prevista]
+            [leitor_id, livro_id, data_emprestimo, data_devolucao_prevista]
         );
         return { id: result.insertId };
     },
